@@ -9,13 +9,13 @@ Created on Tue Feb  4 15:32:55 2025
 import numpy as np
 import matplotlib.pyplot as plt
 #import tensorflow as tf
-from tensorflow import keras 
+from tensorflow import keras
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 #%% Import model
 
-model_filepath = r'/home/anandrei/deep_learning_alpha/projekt/model_checkpoints/chess_pieces.keras'
-model = keras.models.load_model(model_filepath)
+MODEL_FILEPATH = r'/home/anandrei/deep_learning_alpha/projekt/model_checkpoints/chess_pieces.keras'
+model = keras.models.load_model(MODEL_FILEPATH)
 
 model.summary()
 
@@ -37,17 +37,17 @@ keras.utils.plot_model(
 
 #%% Load the test data
 
-batch_size = 640
+BATCH_SIZE = 640
 class_names_list = ['e', 'P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k']
 
 test_data = keras.utils.image_dataset_from_directory(
     r'/home/anandrei/deep_learning_alpha/projekt/data/pieces_test/',  # path to images
     labels='inferred',              # labels are generated from the directory structure
-    label_mode='categorical',       # 'categorical' => categorical cross-entropy 
+    label_mode='categorical',       # 'categorical' => categorical cross-entropy
     class_names=class_names_list,   # such that i can control the order of the class names
     color_mode='rgb',               # alternatives: 'grayscale', 'rgba'
-    batch_size=batch_size,
-    image_size=(50, 50),        
+    batch_size=BATCH_SIZE,
+    image_size=(50, 50),
     shuffle=False,                  # shuffle images before each epoch
     seed=0,                         # shuffle seed
     validation_split= None,         # percentage of validation data
@@ -84,25 +84,17 @@ print(f'Mislabeled pieces in the test set: {np.sum(y_true != y_pred)} out of 128
 
 #%% Calculate and plot the confusion matrix
 
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-
 conf_mat = confusion_matrix(
-    y_true, 
-    y_pred, 
-    #normalize = 'pred' # normalize over predicted label (columns) 
+    y_true,
+    y_pred,
+    #normalize = 'pred' # normalize over predicted label (columns)
     )
 
 # the numbers on the diagonals are O(10^3) or higher => set them to 0
-np.fill_diagonal(conf_mat, 0) 
+np.fill_diagonal(conf_mat, 0)
 
 disp = ConfusionMatrixDisplay(conf_mat, display_labels = class_names_list)
 
 disp.plot()
 plt.title("Test Data Confusion Matrix")
 plt.show()
-
-
-
-
-
-
