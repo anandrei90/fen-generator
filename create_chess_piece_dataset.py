@@ -61,8 +61,8 @@ def create_piece_dataset(
             squares = view_as_blocks(data, (50, 50, 1)).reshape(64, 50, 50, 1)
 
         # save each square as a new image
-        for j, element in enumerate(fen_list):
-            save_path = join(save_to_path, element)
+        for j, piece in enumerate(fen_list):
+            save_path = join(save_to_path, piece)
 
             # check if dir exists; if not, create it
             if not isdir(save_path):
@@ -73,8 +73,9 @@ def create_piece_dataset(
                 # use phash (perceptual hash) to remove near duplicates
                 try:
                     image_hash = str(imagehash.phash(piece_image, hash_size))
-                except:
+                except Exception as e:
                     image_hash = None
+                    print(f'Hash error for {piece}, image {i+1}_{j+1}: {e}')
 
                 # check if hash already exists
                 if image_hash and image_hash not in hashes:
