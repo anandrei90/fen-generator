@@ -1,6 +1,5 @@
 from os import listdir, makedirs
 from os.path import isfile, join, isdir
-import sys
 import numpy as np
 from PIL import Image
 from skimage.util import view_as_blocks
@@ -88,11 +87,12 @@ def create_piece_dataset(
 
 if __name__ == '__main__':
 
-    WORKING_DIR = sys.path[0]
-    TRAIN_PATH_BOARDS = join(WORKING_DIR, "data", "train")
-    TEST_PATH_BOARDS = join(WORKING_DIR, "data", "test")
-    TRAIN_PATH_PIECES = join(WORKING_DIR, "data", "pieces_train_no_duplicates")
-    TEST_PATH_PIECES = join(WORKING_DIR, "data", "pieces_test")
+    from constants import (
+        TRAIN_PATH_BOARDS,
+        TEST_PATH_BOARDS,
+        TRAIN_PATH_PIECES,
+        TEST_PATH_PIECES
+    )
 
     # Create training dataset without duplicates
     create_piece_dataset(

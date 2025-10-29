@@ -1,28 +1,22 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 31 16:48:05 2025
-
-@author: anandrei
-"""
+#%%
+import os
+from os.path import join
 import time
-
 import numpy as np
 import matplotlib.pyplot as plt
-#import tensorflow as tf
 from tensorflow import keras
+from constants import TRAIN_PATH_PIECES, BATCH_SIZE, CLASS_NAMES
 
 
-
-BATCH_SIZE = 640
-class_names_list = ['e', 'P', 'N', 'B', 'R', 'Q', 'K', 'p', 'n', 'b', 'r', 'q', 'k']
+# hacky fix to get the correct working dir for notebooks
+if not TRAIN_PATH_PIECES.startswith('/home'):
+    TRAIN_PATH_PIECES = join(os.getcwd(), "data", "pieces_train_no_duplicates")
 
 train_data = keras.utils.image_dataset_from_directory(
-    # path to images
-    r'/home/anandrei/deep_learning_alpha/projekt/data/pieces_train_no_duplicates/',
+    directory=TRAIN_PATH_PIECES,    # path to images
     labels='inferred',              # labels are generated from the directory structure
     label_mode='categorical',       # 'categorical' => categorical cross-entropy
-    class_names=class_names_list,   # such that i can control the order of the class names
+    class_names=CLASS_NAMES,        # such that i can control the order of the class names
     color_mode='rgb',               # alternatives: 'grayscale', 'rgba'
     batch_size=BATCH_SIZE,
     image_size=(50, 50),
@@ -54,11 +48,11 @@ all_labels = np.concatenate(all_labels, axis = 0)
 
 #%% Plot histogram to visualize class imbalance
 
-label_counts = [np.sum(all_labels == i) for i in range(len(class_names_list))]
+label_counts = [np.sum(all_labels == i) for i in range(len(CLASS_NAMES))]
 
-plt.bar(class_names_list, label_counts)
+plt.bar(CLASS_NAMES, label_counts)
 
-for i in range(len(class_names_list)):
+for i in range(len(CLASS_NAMES)):
     plt.text(x = i, # x position of the text
              y = label_counts[i] + 5000,  # y position of the text
              s = f'{round(100*label_counts[i] / len(all_labels),1)} %',
@@ -153,14 +147,14 @@ lr_reduction = keras.callbacks.ReduceLROnPlateau(
     min_lr=1e-5
 )
 
-
-CHECKPOINT_FILEPATH = r'/home/anandrei/deep_learning_alpha/projekt/model_checkpoints/ckpt_model_no_dupl_run3.keras'
+CHECKPOINT_FILEPATH = join(WORKING_DIR, "model_checkpoints", "ckpt_model_no_dupl_run3.keras")
 
 model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
     filepath=CHECKPOINT_FILEPATH,
     monitor='val_accuracy',
     mode='max',
-    save_best_only=True)
+    save_best_only=True
+    )
 
 
 
@@ -198,7 +192,6 @@ plt.ylabel('Macro F1 Score')
 plt.show()
 
 
-#%%
-
-SAVE_FILE_PATH = r'/home/anandrei/deep_learning_alpha/projekt/model_checkpoints/chess_pieces.keras'
-#model.save(SAVE_FILE_PATH)
+#%%  Save the model
+SAVE_FILE_PATH = join(WORKING_DIR, "model_checkpoints", "chess_pieces.keras")
+# model.save(SAVE_FILE_PATH)
