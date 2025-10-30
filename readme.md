@@ -1,6 +1,6 @@
 # Chess Position to FEN String
 
-This repo contains scripts and notebooks used in training a CNN model that can inspect chessboard images and then reconstruct the FEN string (https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) describing the chess position appearing in the considered image. Final project for my deep learning course.
+This repo contains scripts and notebooks used in training a CNN model that can inspect chessboard images and then reconstruct the FEN string (https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) describing the chess position appearing in the considered image. Final project for my deep learning course. Data taken from https://www.kaggle.com/datasets/koryakinp/chess-positions.
 
 If you want to try it yourself:
   - clone the repo locally: `git clone https://github.com/anandrei90/fen-generator`
