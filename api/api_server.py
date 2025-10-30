@@ -40,7 +40,7 @@ def home():
 
 # endpoint for inferring FEN from chessboard image
 @app.post("/infer_fen/")
-async def upload_chessboard_image(file: UploadFile = File(...)) -> str:
+async def upload_chessboard_image(file: UploadFile = File(...)):
     """
     Lets the user upload a chessboard image file to the API.
     The API breaks the chessboard image into squares and
