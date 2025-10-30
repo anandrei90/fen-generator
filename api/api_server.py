@@ -1,7 +1,8 @@
 import uvicorn
 import numpy as np
+import matplotlib.pyplot as plt
 from tensorflow import keras
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, Response, UploadFile, File
 from contextlib import asynccontextmanager
 import io
 from PIL import Image
@@ -45,7 +46,8 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
     Lets the user upload a chessboard image file to the API.
     The API breaks the chessboard image into squares and
     classifies each square using a pre-trained ML model.
-    Finally, the API infers the FEN string using the classified squares.
+    Finally, the API infers the FEN string using the classified squares,
+    and returns the chessboard image with the FEN string overlayed.
 
     Parameters
     ----------
@@ -54,13 +56,16 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
 
     Returns
     -------
-    fen_string : string
-        The inferred FEN string from the chessboard image.
+    Response: image/png
+        The chessboard image with the inferred FEN string overlayed.
     """
 
     # read image file
     image_data = await file.read()
     image = Image.open(io.BytesIO(image_data))
+
+    # save figure object for later
+    figure = image
 
     # load image
     image = image.convert("RGB")
@@ -79,7 +84,7 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
             square = image[:, row*50:(row+1)*50, col*50:(col+1)*50, :]
 
             # classify square using ML model
-            # predict.shape = (1, 13)
+            # prediction.shape = (1, 13)
             prediction = ml_models["chess_pieces"].predict(square, verbose=0)
             # get index of max prediction
             piece_index = np.argmax(prediction, axis=1)[0]
@@ -90,7 +95,27 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
     # construct fen string from pieces
     fen_string = one_dim_array_to_fen(pieces, separator='-')
 
-    return {"FEN string": fen_string}
+    # create an in-memory buffer to hold the figure
+    buffer = io.BytesIO()
+
+    # create the figure with matplotlib
+    plt.figure(figsize=(8, 8))
+    plt.imshow(figure)
+    # add fen string as title to the figure
+    plt.title(f"FEN: {fen_string}", fontsize=16)
+    plt.axis('off')
+    # save the plot in the buffer as a png
+    plt.savefig(buffer, format="png")
+    plt.close()
+
+    # move the file pointer back to the start of the buffer so it can be read
+    buffer.seek(0)
+
+    # extract the binary image from the buffer
+    binary_image = buffer.getvalue()
+
+    # send the binary image as a png response to the client
+    return Response(binary_image, media_type="image/png")
 
 
 # my localhost adress
