@@ -1,7 +1,7 @@
 import sys
-from os.path import join, dirname
+from os.path import join
 
-PROJECT_DIR = dirname(sys.path[0])
+PROJECT_DIR = sys.path[0]
 TRAIN_PATH_BOARDS = join(PROJECT_DIR, "data", "train")
 TEST_PATH_BOARDS = join(PROJECT_DIR, "data", "test")
 TRAIN_PATH_PIECES = join(PROJECT_DIR, "data", "pieces_train_no_duplicates")
