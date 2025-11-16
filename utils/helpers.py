@@ -4,7 +4,7 @@ from os.path import isfile, join
 import numpy as np
 from skimage.util import view_as_blocks
 
-from constants import CLASS_NAMES
+from utils.constants import CLASS_NAMES
 
 
 def get_fen_labels_from_dir(path):
