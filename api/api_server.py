@@ -6,8 +6,8 @@ from fastapi import FastAPI, Response, UploadFile, File
 from contextlib import asynccontextmanager
 import io
 from PIL import Image
-from constants import MODEL_PATH, CLASS_NAMES
-from helpers import one_dim_array_to_fen
+from utils.constants import MODEL_PATH, CLASS_NAMES
+from utils.helpers import one_dim_array_to_fen
 
 
 ml_models = {}  # does it have to be a dict?
