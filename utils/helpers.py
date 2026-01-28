@@ -2,6 +2,7 @@ import os
 from os.path import isfile, join
 
 import numpy as np
+import cv2 as cv
 from skimage.util import view_as_blocks
 
 from utils.constants import CLASS_NAMES
@@ -76,3 +77,61 @@ def fens_from_chessboards(model, test_data):
     fen_accuracy = correct_predictions / dataset_length
 
     return fen_accuracy, predicted_fens
+
+
+def find_chessboard_corners(bw_img):
+    # TODO: make sure bw_img is black & white
+    # i.e. pixel values either 0 or 255
+
+    # detect the 6x6 internal chessboard and
+    # find the coordinates of its corners
+    found, points = cv.findChessboardCornersSB(
+        image=bw_img,
+        patternSize=(7, 7),
+        flags=cv.CALIB_CB_NORMALIZE_IMAGE + cv.CALIB_CB_EXHAUSTIVE
+    )  # points[-1, 0, :] is bottom right, points[0, 0, :] is top left
+
+    if not found:
+        return None
+
+    right, bottom = points[-1, 0, :]
+    left, top = points[0, 0, :]
+    # Side of the square
+    square = 0.5 * (right-left + bottom-top)/6
+
+    right = int(right+square)
+    left = int(left-square)
+    top = int(top-square)
+    bottom = int(bottom+square)
+
+    return left, right, top, bottom
+
+
+def crop_chessboard(img):
+
+    # convert to numpy array
+    img = np.array(img)
+
+    # convert image to grayscale
+    gray = cv.cvtColor(src=img, code=cv.COLOR_RGB2GRAY)
+
+    # hardcode thresholds to be tried
+    thresholds = [127, 159, 191, 95, 223, 31]
+
+    # threshold the image
+    for threshold in thresholds:
+
+        _, output = cv.threshold(
+            src=gray,  # source image
+            thresh=threshold,  # threshold value
+            maxval=255,  # maximum value to use with binary thresholding types
+            type=cv.THRESH_BINARY  # thresholding type
+        )
+
+        # return cropped image if chessboard successfully detected
+        points = find_chessboard_corners(output)
+        if points:
+            left, right, top, bottom = points
+            return img[top:bottom, left:right]
+
+    return None
