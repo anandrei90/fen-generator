@@ -1,15 +1,15 @@
 import uvicorn
-import numpy as np
-import matplotlib.pyplot as plt
-from tensorflow import keras
+from tensorflow.keras.models import load_model
 from fastapi import FastAPI, Response, UploadFile, File
 from contextlib import asynccontextmanager
 import io
 from PIL import Image
-from utils.constants import MODEL_PATH, CLASS_NAMES
-from utils.helpers import one_dim_array_to_fen
+from utils.constants import MODEL_PATH
+from utils.helpers import (one_dim_array_to_fen, crop_chessboard,
+                           preprocess_image, classify_squares,
+                           save_fig_in_buffer)
 
-
+# ml model dict for the async context manager
 ml_models = {}  # does it have to be a dict?
 
 
@@ -17,7 +17,7 @@ ml_models = {}  # does it have to be a dict?
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the ML model
-    ml_models["chess_pieces"] = keras.models.load_model(MODEL_PATH)
+    ml_models["chess_pieces"] = load_model(MODEL_PATH)
     yield
     # Clean up the ML models and release the resources
     ml_models.clear()
@@ -27,7 +27,7 @@ app = FastAPI(
     title="Infer FEN from Chessboard Image",
     description="API server to infer FEN from chessboard image using a CNN.",
     lifespan=lifespan
-              )
+)
 
 
 # root endpoint
@@ -40,13 +40,13 @@ def home():
 
 
 # endpoint for inferring FEN from chessboard image
-@app.post("/infer_fen/")
+@app.post("/infer_fen_from_chessboard/")
 async def upload_chessboard_image(file: UploadFile = File(...)):
     """
-    Lets the user upload a chessboard image file to the API.
-    The API breaks the chessboard image into squares and
+    Lets the user upload a chessboard image file to the endpoint.
+    The endpoint breaks the chessboard image into squares and
     classifies each square using a pre-trained ML model.
-    Finally, the API infers the FEN string using the classified squares,
+    Finally, the endpoint infers the FEN string using the classified squares,
     and returns the chessboard image with the FEN string overlayed.
 
     Parameters
@@ -67,30 +67,11 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
     # save figure object for later
     figure = image
 
-    # load image
-    image = image.convert("RGB")
-    image = image.resize((400, 400))
-    image = np.array(image)
-    image = np.expand_dims(image, axis=0)  # (400, 400, 3) -> (1, 400, 400, 3)
+    # preprocess chessboard image
+    image = preprocess_image(image)
 
-    # initialize piece list
-    pieces = []
-
-    # break image into squares and classify each square
-    for row in range(8):
-        for col in range(8):
-            # extract square
-            # square.shape = (1, 50, 50, 3)
-            square = image[:, row*50:(row+1)*50, col*50:(col+1)*50, :]
-
-            # classify square using ML model
-            # prediction.shape = (1, 13)
-            prediction = ml_models["chess_pieces"].predict(square, verbose=0)
-            # get index of max prediction
-            piece_index = np.argmax(prediction, axis=1)[0]
-            piece = CLASS_NAMES[piece_index]
-            # append piece to fen string
-            pieces.append(piece)
+    # classify squares from chessboard image
+    pieces = classify_squares(image=image, model=ml_models["chess_pieces"])
 
     # construct fen string from pieces
     fen_string = one_dim_array_to_fen(pieces, separator='-')
@@ -98,15 +79,68 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
     # create an in-memory buffer to hold the figure
     buffer = io.BytesIO()
 
-    # create the figure with matplotlib
-    plt.figure(figsize=(8, 8))
-    plt.imshow(figure)
-    # add fen string as title to the figure
-    plt.title(f"FEN: {fen_string}", fontsize=16)
-    plt.axis('off')
-    # save the plot in the buffer as a png
-    plt.savefig(buffer, format="png")
-    plt.close()
+    # save the figure in the buffer
+    save_fig_in_buffer(figure=figure, caption=fen_string, buffer=buffer)
+
+    # move the file pointer back to the start of the buffer so it can be read
+    buffer.seek(0)
+
+    # extract the binary image from the buffer
+    binary_image = buffer.getvalue()
+
+    # send the binary image as a png response to the client
+    return Response(binary_image, media_type="image/png")
+
+
+# endpoint for inferring FEN from screenshot
+@app.post("/infer_fen_from_screenshot/")
+async def upload_screenshot(file: UploadFile = File(...)):
+    """
+    Lets the user upload a screenshot containing exactly one chessboard image.
+    The endpoint indentifies and crops out the chessboard, breaks it into
+    squares and classifies each square using a pre-trained ML model. Finally,
+    the endpoint infers the FEN string using the classified squares, and
+    returns the chessboard image with the FEN string overlayed.
+
+    Parameters
+    ----------
+    file : UploadFile (FastAPI-form)
+        The image file to be uploaded.
+
+    Returns
+    -------
+    Response: image/png
+        The detected chessboard image with the inferred FEN string overlayed.
+    """
+
+    # read screenshot
+    screenshot_data = await file.read()
+    screenshot = Image.open(io.BytesIO(screenshot_data))
+
+    # detect & crop out chessboard from screenshot
+    image = crop_chessboard(screenshot)
+
+    # return message if chessboard detection fails
+    if image is None:
+        return "Failed to detect chessboard in image."
+
+    # save figure as PIL.Image object for later
+    figure = Image.fromarray(image)
+
+    # preprocess image
+    image = preprocess_image(image)
+
+    # classify squares from chessboard image
+    pieces = classify_squares(image=image, model=ml_models["chess_pieces"])
+
+    # construct fen string from pieces
+    fen_string = one_dim_array_to_fen(pieces, separator='-')
+
+    # create an in-memory buffer to hold the figure
+    buffer = io.BytesIO()
+
+    # save the figure in the buffer
+    save_fig_in_buffer(figure=figure, caption=fen_string, buffer=buffer)
 
     # move the file pointer back to the start of the buffer so it can be read
     buffer.seek(0)
