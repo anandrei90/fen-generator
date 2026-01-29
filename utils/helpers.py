@@ -80,8 +80,12 @@ def fens_from_chessboards(model, test_data):
 
 
 def find_chessboard_corners(bw_img):
-    # TODO: make sure bw_img is black & white
-    # i.e. pixel values either 0 or 255
+    """
+    Takes a black & white (thresholded) image and detects if and where
+    the chessboard is in the image. Returns the four integers (left,
+    right, top, bottom) corresponding to the boundaries of the chessboard.
+    Cannot detect more than one chessboard in a given image.
+    """
 
     # detect the 6x6 internal chessboard and
     # find the coordinates of its corners
@@ -94,11 +98,15 @@ def find_chessboard_corners(bw_img):
     if not found:
         return None
 
+    # extract coordinates of 6x6 chessboard corners
     right, bottom = points[-1, 0, :]
     left, top = points[0, 0, :]
-    # Side of the square
+    # find side of chessboard square
     square = 0.5 * (right-left + bottom-top)/6
 
+    # infer coordinates of 8x8 chessboard corner
+    # in openCV the origin of the x,y coordinates is top left
+    # i.e. x-axis points rightwards, y-axis downwards
     right = int(right+square)
     left = int(left-square)
     top = int(top-square)
@@ -108,8 +116,13 @@ def find_chessboard_corners(bw_img):
 
 
 def crop_chessboard(img):
+    """
+    Takes an image/screenshot containing a chessboard and returns
+    the cropped out chessboard (if found) from the image.
+    Assumes there is only one chessboard in the image.
+    """
 
-    # convert to numpy array
+    # convert to numpy array to make it openCV-ready
     img = np.array(img)
 
     # convert image to grayscale
@@ -118,7 +131,7 @@ def crop_chessboard(img):
     # hardcode thresholds to be tried
     thresholds = [127, 159, 191, 95, 223, 31]
 
-    # threshold the image
+    # use different thresholds until chessboard is detected
     for threshold in thresholds:
 
         _, output = cv.threshold(
@@ -132,6 +145,6 @@ def crop_chessboard(img):
         points = find_chessboard_corners(output)
         if points:
             left, right, top, bottom = points
-            return img[top:bottom, left:right]
+            return img[top:bottom, left:right]  # openCV conventions
 
     return None
