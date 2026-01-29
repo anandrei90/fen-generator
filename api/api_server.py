@@ -43,10 +43,10 @@ def home():
 @app.post("/infer_fen_from_chessboard/")
 async def upload_chessboard_image(file: UploadFile = File(...)):
     """
-    Lets the user upload a chessboard image file to the API.
-    The API breaks the chessboard image into squares and
+    Lets the user upload a chessboard image file to the endpoint.
+    The endpoint breaks the chessboard image into squares and
     classifies each square using a pre-trained ML model.
-    Finally, the API infers the FEN string using the classified squares,
+    Finally, the endpoint infers the FEN string using the classified squares,
     and returns the chessboard image with the FEN string overlayed.
 
     Parameters
@@ -97,10 +97,10 @@ async def upload_chessboard_image(file: UploadFile = File(...)):
 async def upload_screenshot(file: UploadFile = File(...)):
     """
     Lets the user upload a screenshot containing exactly one chessboard image.
-    The API indentifies and crops out the chessboard, breaks it into squares
-    and classifies each square using a pre-trained ML model. Finally, the API
-    infers the FEN string using the classified squares, and returns the
-    chessboard image with the FEN string overlayed.
+    The endpoint indentifies and crops out the chessboard, breaks it into
+    squares and classifies each square using a pre-trained ML model. Finally,
+    the endpoint infers the FEN string using the classified squares, and
+    returns the chessboard image with the FEN string overlayed.
 
     Parameters
     ----------
